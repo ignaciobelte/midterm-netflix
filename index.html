@@ -1,0 +1,348 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My Favourite Movies</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body { --primary: #6200ee; --secondary: #29b6f6; margin: 0px;}
+        * {font-family: 'Roboto', sans-serif;}
+        button { 
+            -webkit-font-smoothing: antialiased;
+            display: inline-block;
+            text-decoration: none;
+            margin: 2px;
+            color: var(--primary);
+            background: white;
+            border: 1px solid var(--primary);
+            height: 20px;
+            font-size: 9px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: ease-in 0.2s all;
+            padding: 0 8px 0 8px;
+        }
+        div#main {padding: 10px;}
+        input {margin-bottom: 5px; margin-top: 2px; padding: 4px; font-size: 12px; }
+        h1 {background: var(--primary); color: white; font-weight: 300; text-transform: uppercase; font-size: 20px; margin: 0px; padding: 15px;}
+        h2 { margin-block-start: 0px; margin-block-end: 10px; font-size: 20px;  color: var(--primary);}
+        button:hover { background: var(--primary); color: white; }
+        div.actions { margin-top: 10px;}
+        div.movie {display: inline-block; width: auto; padding: 10px; box-shadow: 2px 2px 7px #ccc; margin: 5px;}
+        div.movie div.movie-img {width: 200px; height: auto; min-height: 200px; cursor: pointer;}
+        div.movie div.movie-img img {width: 100%; height: auto;}
+        div.movie div.title {text-align: center; overflow: hidden; text-overflow: ellipsis; width: 200px; white-space: nowrap; }
+        div.field {color: var(--primary); text-transform: uppercase; font-size: 12px;}
+
+        
+        .movie-detail-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px #ccc;
+            display: flex;
+            gap: 20px;
+            max-width: 600px;
+            align-items: center;
+        }
+        .movie-detail-img img {
+            width: 180px;
+            border-radius: 4px;
+            box-shadow: 1px 1px 5px #aaa;
+        }
+        .movie-detail-info {
+            flex: 1;
+        }
+        .movie-detail-info .field-value {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 3px;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+       
+       let initial_movies = [
+        { 
+            title: "Superlópez", 
+            director: "Javier Ruiz Caldera", 
+            thumbnail: "Superlópez info", 
+            additionalInfo: "Un superhéroe español atípico basado en el famoso cómic de Jan.", 
+            picture: "files/superlopez.png" 
+        },
+        { 
+            title: "Jurassic Park", 
+            director: "Steven Spielberg", 
+            thumbnail: "Jurassic Park info", 
+            additionalInfo: "Un parque temático de dinosaurios clonados sale desastrosamente de control.", 
+            picture: "files/jurassicpark.png" 
+        },
+        { 
+            title: "Interstellar", 
+            director: "Christopher Nolan", 
+            thumbnail: "Interstellar info", 
+            additionalInfo: "Un equipo de exploradores viaja a través de un agujero de gusano en busca de un nuevo hogar para la humanidad.", 
+            picture: "files/interstellar.png" 
+        }
+    ];
+
+
+        localStorage.my_movies = localStorage.my_movies || JSON.stringify(initial_movies);
+
+
+        
+        const indexView = (movies) => {
+            let i=0;
+            let view = "";
+
+            while(i < movies.length) {
+              view += `
+                <div class="movie">
+                   <div class="movie-img">
+                        <img data-my-id="${i}" src="${movies[i].picture || movies[i].thumbnail}" onerror="this.src='files/noimage.png'"/>
+                   </div>
+                   <div class="title">
+                        ${movies[i].title || "<em>No title</em>"}
+                   </div>
+                   <div class="actions">
+                        <button class="show" data-my-id="${i}">View</button>
+                        <button class="edit" data-my-id="${i}">edit</button>
+                        <button class="delete" data-my-id="${i}">delete</button>
+                   </div>
+                </div>\n`;
+              i = i + 1;
+            };
+
+            view += `<div class="actions">
+                        <button class="new">Add movie</button>
+                        <button class="reset">Reset model</button>
+                    </div>`;
+
+            return view;
+        };
+
+
+        const editView = (i, movie) => {
+            return `<h2>Edit Movie </h2>
+                <div class="field">
+                Title <br>
+                <input type="text" id="title" placeholder="Title" value="${movie.title || ''}">
+                </div>
+                <div class="field">
+                Director <br>
+                <input type="text" id="director" placeholder="Director" value="${movie.director || ''}">
+                </div>
+                <div class="field">
+                Thumbnail <br>
+                <input type="text" id="thumbnail" placeholder="Thumbnail info" value="${movie.thumbnail || ''}">
+                </div>
+                <div class="field">
+                Additional Info <br>
+                <input type="text" id="additionalInfo" placeholder="Phrase about the film" value="${movie.additionalInfo || ''}">
+                </div>
+                <div class="field">
+                Picture <br>
+                <input type="file" id="picture" accept="image/*">
+                </div>
+                <div class="actions">
+                    <button class="update" data-my-id="${i}">
+                        Update
+                    </button>
+                    <button class="index">
+                        Back
+                    </button>
+                </div>`;
+        }
+
+
+        
+        const showView = (movie) => {
+            return `
+            <div class="movie-detail-card">
+                <div class="movie-detail-img">
+                    <img src="${movie.picture || movie.thumbnail}" onerror="this.src='files/noimage.png'" alt="${movie.title}">
+                </div>
+                <div class="movie-detail-info">
+                    <h2>${movie.title || "<em>No title</em>"}</h2>
+                    
+                    <div class="field">Director</div>
+                    <div class="field-value">${movie.director || "<em>No director</em>"}</div>
+                    
+                    <div class="field">Thumbnail</div>
+                    <div class="field-value">${movie.thumbnail || "<em>No thumbnail</em>"}</div>
+
+                    <div class="field">Additional Info</div>
+                    <div class="field-value">${movie.additionalInfo || "<em>No additional info</em>"}</div>
+
+                    <div class="actions">
+                        <button class="index">Back</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+
+        const newView = () => {
+            return `<h2>Create Movie</h2>
+                <div class="field">
+                Title <br>
+                <input type="text" id="title" placeholder="Title">
+                </div>
+                <div class="field">
+                Director <br>
+                <input type="text" id="director" placeholder="Director">
+                </div>
+                <div class="field">
+                Thumbnail <br>
+                <input type="text" id="thumbnail" placeholder="Thumbnail info">
+                </div>
+                <div class="field">
+                Additional Info <br>
+                <input type="text" id="additionalInfo" placeholder="Phrase about the film">
+                </div>
+                <div class="field">
+                Picture <br>
+                <input type="file" id="picture" accept="image/*">
+                </div>
+                <div class="actions">
+                    <button class="create">Create</button>
+                    <button class="index">Back</button>
+                </div>`;
+        }
+
+
+
+         
+        const indexContr = () => {
+         let my_movies = JSON.parse(localStorage.my_movies);
+         document.getElementById('main').innerHTML = indexView(my_movies);
+         };
+
+
+        const showContr = (i) => {
+            let movie = JSON.parse(localStorage.my_movies)[i];
+            document.getElementById('main').innerHTML = showView(movie);
+        };
+
+        const newContr = () => {
+            document.getElementById('main').innerHTML = newView();
+        };
+
+        const createContr = () => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            let title = document.getElementById('title').value;
+            let director = document.getElementById('director').value;
+            let thumbnail = document.getElementById('thumbnail').value;
+            let additionalInfo = document.getElementById('additionalInfo').value;
+            let fileInput = document.getElementById('picture');
+
+            let saveMovie = (pictureUrl) => {
+                let newMovie = {
+                    title: title,
+                    director: director,
+                    thumbnail: thumbnail,
+                    additionalInfo: additionalInfo,
+                    picture: pictureUrl || "files/noimage.png"
+                };
+                my_movies.push(newMovie);
+                localStorage.my_movies = JSON.stringify(my_movies);
+                indexContr();
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    saveMovie(e.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveMovie();
+            }
+        };
+
+        const editContr = (i) => {
+            let movie = JSON.parse(localStorage.my_movies)[i];
+            document.getElementById('main').innerHTML = editView(i, movie);
+        };
+
+
+        const updateContr = (i) => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            let title = document.getElementById('title').value;
+            let director = document.getElementById('director').value;
+            let thumbnail = document.getElementById('thumbnail').value;
+            let additionalInfo = document.getElementById('additionalInfo').value;
+            let fileInput = document.getElementById('picture');
+
+            let updateMovie = (pictureUrl) => {
+                my_movies[i].title = title;
+                my_movies[i].director = director;
+                my_movies[i].thumbnail = thumbnail;
+                my_movies[i].additionalInfo = additionalInfo;
+                if (pictureUrl) {
+                    my_movies[i].picture = pictureUrl;
+                }
+                localStorage.my_movies = JSON.stringify(my_movies);
+                indexContr();
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    updateMovie(e.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                updateMovie();
+            }
+        };
+
+
+        const deleteContr = (i) => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            if (confirm("Are you sure you want to delete this movie?")) {
+                my_movies.splice(i, 1);
+                localStorage.my_movies = JSON.stringify(my_movies);
+                indexContr();
+            }
+        };
+
+
+        const resetContr = () => {
+            localStorage.my_movies = JSON.stringify(initial_movies);
+            indexContr();
+        };
+
+
+        
+        const matchEvent = (ev, sel) => ev.target.matches(sel);
+        const myId = (ev) => Number(ev.target.dataset.myId);
+
+        document.addEventListener('click', ev => {
+            if      (matchEvent(ev, '.index'))  indexContr  ();
+            else if (matchEvent(ev, '.edit'))   editContr   (myId(ev));
+            else if (matchEvent(ev, '.update')) updateContr (myId(ev));
+            else if (matchEvent(ev, '.show'))   showContr   (myId(ev));
+            else if (matchEvent(ev, '.delete')) deleteContr (myId(ev));
+            else if (matchEvent(ev, '.new'))    newContr    ();
+            else if (matchEvent(ev, '.create')) createContr ();
+            else if (matchEvent(ev, '.reset'))  resetContr  ();
+        })
+
+        
+                
+        document.addEventListener('DOMContentLoaded', indexContr);
+    </script>
+</head>
+
+<body>
+
+    <h1>My Favourite Movies</h1>
+    <div id="main"> <!-- The view is included here --> </div>
+
+    
+</body>
+</html>
